@@ -127,6 +127,16 @@ CONFIG_FILE=""
 # DATABASE UPDATE FUNCTIONS
 # ============================================================================
 
+# Helper function to extract value from PHP configuration file
+extract_php_config_value() {
+    local config_file=$1
+    local var_name=$2
+    
+    # Try both global array and direct variable patterns
+    grep -oP "(?<=\\\$global\['${var_name}'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
+    grep -oP "(?<=\\\$$var_name\s=\s\")[^\"]*" "$config_file" 2>/dev/null
+}
+
 # Function to extract database credentials from AVideo configuration.php
 extract_db_credentials() {
     local target_dir=$1
@@ -137,12 +147,9 @@ extract_db_credentials() {
     fi
     
     # Extract database credentials from PHP configuration file
-    DB_USER=$(grep -oP "(?<=\\\$global\['databaseUser'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
-              grep -oP '(?<=\$databaseUser\s=\s")[^"]*' "$config_file" 2>/dev/null)
-    DB_PASS=$(grep -oP "(?<=\\\$global\['databasePass'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
-              grep -oP '(?<=\$databasePass\s=\s")[^"]*' "$config_file" 2>/dev/null)
-    local db_name=$(grep -oP "(?<=\\\$global\['databaseName'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
-                    grep -oP '(?<=\$databaseName\s=\s")[^"]*' "$config_file" 2>/dev/null)
+    DB_USER=$(extract_php_config_value "$config_file" "databaseUser")
+    DB_PASS=$(extract_php_config_value "$config_file" "databasePass")
+    local db_name=$(extract_php_config_value "$config_file" "databaseName")
     
     if [ -n "$db_name" ]; then
         DB_NAMES["$target_dir"]="$db_name"
@@ -235,7 +242,7 @@ update_database_sql() {
     } >> "$LOG_FILE"
     
     # Get current database version
-    local current_version=$(mysql -u"$DB_USER" -p"$DB_PASS" -s -N -e \
+    local current_version=$(MYSQL_PWD="$DB_PASS" mysql -u"$DB_USER" -s -N -e \
         "SELECT version FROM configurations WHERE id=1 LIMIT 1;" "$db_name" 2>/dev/null)
     
     {
@@ -246,13 +253,21 @@ update_database_sql() {
     local update_count=0
     local error_count=0
     
-    for sql_file in $(ls "$updatedb_dir"/updateDb.v*.sql 2>/dev/null | sort -V); do
+    shopt -s nullglob
+    local sql_files=("$updatedb_dir"/updateDb.v*.sql)
+    shopt -u nullglob
+    
+    # Sort files by version number
+    IFS=$'\n' sql_files=($(sort -V <<<"${sql_files[*]}"))
+    unset IFS
+    
+    for sql_file in "${sql_files[@]}"; do
         local filename=$(basename "$sql_file")
         {
             echo "  - Processing: $filename"
         } >> "$LOG_FILE"
         
-        if mysql -u"$DB_USER" -p"$DB_PASS" "$db_name" < "$sql_file" >> "$LOG_FILE" 2>&1; then
+        if MYSQL_PWD="$DB_PASS" mysql -u"$DB_USER" "$db_name" < "$sql_file" >> "$LOG_FILE" 2>&1; then
             ((update_count++))
             {
                 echo "    ✔️ Applied successfully"
