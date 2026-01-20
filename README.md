@@ -93,8 +93,20 @@ $mysqlDatabase = 'your_database_name';
 - Mai rapid
 - Nu necesită acces web
 - Extrage automat credențialele din `videos/configuration.php` dacă nu sunt setate manual
+- **Intelligent Update**: Compară versiunea curentă a bazei de date și aplică DOAR update-urile necesare
 
-**Notă:** Scriptul va rula automat toate fișierele `updateDb.v*.sql` în ordine secvențială (v1.0, v1.1, v2.0, etc).
+**Cum funcționează Smart Update:**
+1. Scriptul citește versiunea curentă din baza de date (ex: `20.0`)
+2. Pentru fiecare fișier SQL din `updatedb/`, extrage versiunea (ex: `updateDb.v21.5.sql` → versiunea `21.5`)
+3. Compară: dacă versiunea fișierului > versiunea curentă, aplică update-ul
+4. Altfel, sare peste fișier (deja aplicat)
+
+**Exemplu:**
+- DB actual: versiunea 20.0
+- Fișiere disponibile: updateDb.v1.0.sql ... updateDb.v25.0.sql
+- Rezultat: Se aplică DOAR v20.1 și v21.0+ (skip v1.0-v20.0)
+
+**Notă:** Scriptul va rula automat toate fișierele `updateDb.v*.sql` în ordine secvențială (v1.0, v1.1, v2.0, etc), dar va aplica DOAR pe cele mai noi decât versiunea curentă a bazei de date.
 
 ## Utilizare
 
@@ -152,13 +164,15 @@ Toate detaliile sunt salvate în `update_avideo.log`:
    mysqldump -u root -p database_name > backup_$(date +%Y%m%d).sql
    ```
 
-2. **Credențiale**: Nu include credențiale în script dacă este versionat în Git!
+2. **Testare**: Testează întâi pe un mediu de staging!
+
+3. **Smart Update**: Scriptul verifică versiunea curentă a bazei de date și aplică DOAR update-urile mai noi. Dacă versiunea nu poate fi detectată, scriptul va sări peste toate update-urile pentru siguranță.
+
+4. **Credențiale**: Nu include credențiale în script dacă este versionat în Git!
    - Folosește fișiere de configurare externe
    - Sau setează variabilele de mediu
 
-3. **Testare**: Testează întâi pe un mediu de staging!
-
-4. **Permisiuni**: Asigură-te că scriptul are permisiunile corecte:
+5. **Permisiuni**: Asigură-te că scriptul are permisiunile corecte:
    ```bash
    chmod 700 update_avideo.sh  # Doar owner poate citi/scrie/executa
    ```
