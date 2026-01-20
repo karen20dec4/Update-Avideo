@@ -148,42 +148,89 @@ extract_db_credentials() {
     local target_dir=$1
     local config_file="$target_dir/videos/configuration.php"
     
+    {
+        echo ""
+        echo "=== EXTRACTING DB CREDENTIALS ==="
+        echo "Target directory: $target_dir"
+        echo "Configuration file: $config_file"
+    } >> "$LOG_FILE"
+    
     if [ ! -f "$config_file" ]; then
         {
-            echo "⚠️ Configuration file not found: $config_file"
+            echo "❌ Configuration file not found: $config_file"
+            echo "=== EXTRACTION FAILED ==="
         } >> "$LOG_FILE"
         return 1
     fi
+    
+    {
+        echo "✔️ Configuration file exists"
+        echo ""
+        echo "Attempting to extract MySQL variables..."
+    } >> "$LOG_FILE"
     
     # Extract database credentials from PHP configuration file
     # Variable names: $mysqlUser, $mysqlPass, $mysqlDatabase
     local extracted_user=$(extract_php_config_value "$config_file" "mysqlUser")
     local extracted_pass=$(extract_php_config_value "$config_file" "mysqlPass")
     local extracted_db=$(extract_php_config_value "$config_file" "mysqlDatabase")
+    local extracted_host=$(extract_php_config_value "$config_file" "mysqlHost")
     
     {
-        echo "- Reading configuration from: $config_file"
-        echo "  Found user: ${extracted_user:-[not found]}"
-        echo "  Found password: ${extracted_pass:+[found]}"
-        echo "  Found database: ${extracted_db:-[not found]}"
+        echo "Extraction results:"
+        echo "  mysqlHost:     ${extracted_host:-[NOT FOUND]}"
+        echo "  mysqlUser:     ${extracted_user:-[NOT FOUND]}"
+        echo "  mysqlPass:     ${extracted_pass:+[FOUND - hidden for security]}"
+        [ -z "$extracted_pass" ] && echo "  mysqlPass:     [NOT FOUND]"
+        echo "  mysqlDatabase: ${extracted_db:-[NOT FOUND]}"
+        echo ""
     } >> "$LOG_FILE"
+    
+    # Debug: Show first 50 lines of config file to help diagnose issues
+    if [ -z "$extracted_user" ] || [ -z "$extracted_pass" ] || [ -z "$extracted_db" ]; then
+        {
+            echo "⚠️ Some values not found. Showing lines containing 'mysql' from config file:"
+            grep -in "mysql" "$config_file" 2>/dev/null | head -20 || echo "  No lines containing 'mysql' found in file"
+            echo ""
+        } >> "$LOG_FILE"
+    fi
     
     # Use extracted values if not already set globally
     if [ -z "$DB_USER" ] && [ -n "$extracted_user" ]; then
         DB_USER="$extracted_user"
+        {
+            echo "✔️ Set DB_USER from config: $DB_USER"
+        } >> "$LOG_FILE"
+    elif [ -n "$DB_USER" ]; then
+        {
+            echo "ℹ️ Using globally configured DB_USER: $DB_USER"
+        } >> "$LOG_FILE"
     fi
+    
     if [ -z "$DB_PASS" ] && [ -n "$extracted_pass" ]; then
         DB_PASS="$extracted_pass"
+        {
+            echo "✔️ Set DB_PASS from config (hidden)"
+        } >> "$LOG_FILE"
+    elif [ -n "$DB_PASS" ]; then
+        {
+            echo "ℹ️ Using globally configured DB_PASS"
+        } >> "$LOG_FILE"
     fi
     
     # Set database name for this directory
     if [ -n "$extracted_db" ]; then
         DB_NAMES["$target_dir"]="$extracted_db"
+        {
+            echo "✔️ Set database name for $target_dir: $extracted_db"
+            echo "=== EXTRACTION SUCCESSFUL ==="
+        } >> "$LOG_FILE"
         return 0
     fi
     
     {
-        echo "⚠️ Could not extract database name from configuration"
+        echo "❌ Could not extract database name from configuration"
+        echo "=== EXTRACTION FAILED ==="
     } >> "$LOG_FILE"
     return 1
 }
@@ -241,34 +288,94 @@ update_database_sql() {
     local target_dir=$1
     local updatedb_dir="$target_dir/updatedb"
     
+    {
+        echo ""
+        echo "=== SQL DATABASE UPDATE ==="
+        echo "Target directory: $target_dir"
+        echo "updatedb directory: $updatedb_dir"
+    } >> "$LOG_FILE"
+    
     if [ ! -d "$updatedb_dir" ]; then
         {
             echo "⚠️ updatedb directory not found in $target_dir"
-        } >> "$LOG_FILE"
-        return 1
-    fi
-    
-    # Extract DB credentials if not set
-    if [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
-        if ! extract_db_credentials "$target_dir"; then
-            {
-                echo "❌ Could not extract database credentials from configuration"
-            } >> "$LOG_FILE"
-            return 1
-        fi
-    fi
-    
-    local db_name="${DB_NAMES[$target_dir]}"
-    if [ -z "$db_name" ]; then
-        {
-            echo "❌ Database name not configured for $target_dir"
+            echo "=== SQL UPDATE SKIPPED ==="
         } >> "$LOG_FILE"
         return 1
     fi
     
     {
-        echo "- Updating database via SQL files in $updatedb_dir"
-        echo "- Database: $db_name, User: $DB_USER"
+        echo "✔️ updatedb directory exists"
+    } >> "$LOG_FILE"
+    
+    # Extract DB credentials if not set
+    {
+        echo ""
+        echo "Checking database credentials..."
+        echo "Current DB_USER: ${DB_USER:-[not set]}"
+        echo "Current DB_PASS: ${DB_PASS:+[set - hidden]}"
+        [ -z "$DB_PASS" ] && echo "Current DB_PASS: [not set]"
+    } >> "$LOG_FILE"
+    
+    if [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+        {
+            echo "Credentials not set globally, attempting extraction..."
+        } >> "$LOG_FILE"
+        
+        if ! extract_db_credentials "$target_dir"; then
+            {
+                echo "❌ Could not extract database credentials from configuration"
+                echo "=== SQL UPDATE FAILED ==="
+            } >> "$LOG_FILE"
+            return 1
+        fi
+    else
+        {
+            echo "✔️ Using globally configured credentials"
+        } >> "$LOG_FILE"
+        
+        # Still need to get database name from config
+        local config_file="$target_dir/videos/configuration.php"
+        if [ -f "$config_file" ]; then
+            local extracted_db=$(extract_php_config_value "$config_file" "mysqlDatabase")
+            if [ -n "$extracted_db" ]; then
+                DB_NAMES["$target_dir"]="$extracted_db"
+                {
+                    echo "✔️ Extracted database name: $extracted_db"
+                } >> "$LOG_FILE"
+            fi
+        fi
+    fi
+    
+    local db_name="${DB_NAMES[$target_dir]}"
+    {
+        echo ""
+        echo "Final credentials check:"
+        echo "  DB_USER: ${DB_USER:-[NOT SET]}"
+        echo "  DB_PASS: ${DB_PASS:+[SET - hidden]}"
+        [ -z "$DB_PASS" ] && echo "  DB_PASS: [NOT SET]"
+        echo "  DB_NAME: ${db_name:-[NOT SET]}"
+    } >> "$LOG_FILE"
+    
+    if [ -z "$db_name" ]; then
+        {
+            echo ""
+            echo "❌ Database name not configured for $target_dir"
+            echo "   DB_NAMES array contents:"
+            for key in "${!DB_NAMES[@]}"; do
+                echo "     [$key] = ${DB_NAMES[$key]}"
+            done
+            echo "=== SQL UPDATE FAILED ==="
+        } >> "$LOG_FILE"
+        return 1
+    fi
+    
+    {
+        echo ""
+        echo "✔️ All credentials available"
+        echo "Starting SQL update process..."
+        echo "- Database: $db_name"
+        echo "- User: $DB_USER"
+        echo "- updatedb directory: $updatedb_dir"
     } >> "$LOG_FILE"
     
     # Get current database version
