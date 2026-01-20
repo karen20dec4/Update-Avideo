@@ -425,7 +425,8 @@ update_database_sql() {
         local filename=$(basename "$sql_file")
         
         # Extract version from filename (e.g., updateDb.v2.5.sql -> 2.5)
-        local file_version=$(echo "$filename" | grep -oP 'v\K[0-9.]+' | head -1)
+        # Remove any trailing dots to ensure clean version numbers
+        local file_version=$(echo "$filename" | grep -oP 'v\K[0-9]+(\.[0-9]+)*' | head -1)
         
         {
             echo "  - Checking: $filename (version $file_version)"
