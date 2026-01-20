@@ -1,6 +1,46 @@
 #!/bin/bash
-# face update la avideo din directoarele de mai jos 
-# comenteaza si in .htaccess # Options All -Indexes 
+# ============================================================================
+# AVIDEO Update Script - Automatic File & Database Updates
+# ============================================================================
+# This script updates AVIDEO software in multiple directories and optionally
+# updates the database after file updates.
+#
+# Features:
+# - Updates AVIDEO files via git pull
+# - Comments out 'Options All -Indexes' in .htaccess
+# - Progress bar with real-time status indicators
+# - Detailed error tracking and reporting
+# - Optional automatic database updates
+#
+# ============================================================================
+# DATABASE UPDATE CONFIGURATION
+# ============================================================================
+# To enable automatic database updates, set ENABLE_DB_UPDATE="yes" below
+# and configure one of the two available methods:
+#
+# METHOD 1 - HTTP (Recommended):
+#   - Calls the web interface update.php for each domain
+#   - Configure DOMAIN_BASE_URLS with your domain URLs
+#   - Example:
+#       ENABLE_DB_UPDATE="yes"
+#       DB_UPDATE_METHOD="http"
+#       DOMAIN_BASE_URLS["/home/teentwerk/public_html"]="https://example.com"
+#       ADMIN_USER="admin"
+#       ADMIN_PASS="password"
+#
+# METHOD 2 - Direct SQL:
+#   - Runs SQL files from updatedb directory directly
+#   - Automatically reads DB credentials from videos/configuration.php
+#   - Or set DB_USER, DB_PASS, and DB_NAMES manually
+#   - Example:
+#       ENABLE_DB_UPDATE="yes"
+#       DB_UPDATE_METHOD="sql"
+#       DB_USER="root"
+#       DB_PASS="password"
+#       DB_NAMES["/home/teentwerk/public_html"]="avideo_db"
+#
+# WARNING: Always backup your database before enabling automatic updates!
+# ============================================================================
 
 
 # Culori pentru terminal
@@ -47,6 +87,228 @@ declare -a SUCCESS_DOMAINS
 declare -a WARNING_DOMAINS
 declare -a ERROR_DOMAINS
 declare -A DOMAIN_ERRORS
+
+# ============================================================================
+# DATABASE UPDATE CONFIGURATION
+# ============================================================================
+# Enable automatic database updates after file updates (yes/no)
+ENABLE_DB_UPDATE="no"
+
+# Database update method: "http" or "sql"
+# - "http": Calls the web interface update.php (requires ADMIN_USER/ADMIN_PASS or AUTH_TOKEN)
+# - "sql": Runs SQL files directly from updatedb directory (requires DB_USER/DB_PASS/DB_NAME)
+DB_UPDATE_METHOD="http"
+
+# HTTP Method Configuration (for method="http")
+# Base URL for each domain (will append /view/update.php or your custom path)
+# Example: DOMAIN_BASE_URLS["/home/teentwerk/public_html"]="https://example.com"
+declare -A DOMAIN_BASE_URLS
+
+# Authentication method: "basic" or "session"
+AUTH_METHOD="basic"
+ADMIN_USER=""
+ADMIN_PASS=""
+# Or use session token if available
+AUTH_TOKEN=""
+
+# SQL Method Configuration (for method="sql")
+# Database credentials can be read from configuration file or set here
+DB_USER=""
+DB_PASS=""
+# Database names for each directory (if different per domain)
+declare -A DB_NAMES
+# Example: DB_NAMES["/home/teentwerk/public_html"]="avideo_db1"
+
+# Path to configuration file containing DB credentials (optional)
+# The script will try to read from videos/configuration.php if this is empty
+CONFIG_FILE=""
+
+# ============================================================================
+# DATABASE UPDATE FUNCTIONS
+# ============================================================================
+
+# Function to extract database credentials from AVideo configuration.php
+extract_db_credentials() {
+    local target_dir=$1
+    local config_file="$target_dir/videos/configuration.php"
+    
+    if [ ! -f "$config_file" ]; then
+        return 1
+    fi
+    
+    # Extract database credentials from PHP configuration file
+    DB_USER=$(grep -oP "(?<=\\\$global\['databaseUser'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
+              grep -oP '(?<=\$databaseUser\s=\s")[^"]*' "$config_file" 2>/dev/null)
+    DB_PASS=$(grep -oP "(?<=\\\$global\['databasePass'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
+              grep -oP '(?<=\$databasePass\s=\s")[^"]*' "$config_file" 2>/dev/null)
+    local db_name=$(grep -oP "(?<=\\\$global\['databaseName'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
+                    grep -oP '(?<=\$databaseName\s=\s")[^"]*' "$config_file" 2>/dev/null)
+    
+    if [ -n "$db_name" ]; then
+        DB_NAMES["$target_dir"]="$db_name"
+        return 0
+    fi
+    return 1
+}
+
+# Function to update database via HTTP (calls update.php)
+update_database_http() {
+    local target_dir=$1
+    local base_url="${DOMAIN_BASE_URLS[$target_dir]}"
+    
+    if [ -z "$base_url" ]; then
+        {
+            echo "⚠️ No base URL configured for $target_dir, skipping DB update"
+        } >> "$LOG_FILE"
+        return 1
+    fi
+    
+    local update_url="$base_url/view/update.php"
+    
+    {
+        echo "- Updating database via HTTP: $update_url"
+    } >> "$LOG_FILE"
+    
+    # Make HTTP request to trigger database update
+    if [ "$AUTH_METHOD" = "basic" ] && [ -n "$ADMIN_USER" ] && [ -n "$ADMIN_PASS" ]; then
+        if curl -s -f -u "$ADMIN_USER:$ADMIN_PASS" "$update_url" >> "$LOG_FILE" 2>&1; then
+            {
+                echo "✔️ Database updated successfully via HTTP"
+            } >> "$LOG_FILE"
+            return 0
+        fi
+    elif [ -n "$AUTH_TOKEN" ]; then
+        if curl -s -f -H "Authorization: Bearer $AUTH_TOKEN" "$update_url" >> "$LOG_FILE" 2>&1; then
+            {
+                echo "✔️ Database updated successfully via HTTP"
+            } >> "$LOG_FILE"
+            return 0
+        fi
+    else
+        if curl -s -f "$update_url" >> "$LOG_FILE" 2>&1; then
+            {
+                echo "✔️ Database updated successfully via HTTP"
+            } >> "$LOG_FILE"
+            return 0
+        fi
+    fi
+    
+    {
+        echo "❌ Failed to update database via HTTP"
+    } >> "$LOG_FILE"
+    return 1
+}
+
+# Function to update database via SQL files
+update_database_sql() {
+    local target_dir=$1
+    local updatedb_dir="$target_dir/updatedb"
+    
+    if [ ! -d "$updatedb_dir" ]; then
+        {
+            echo "⚠️ updatedb directory not found in $target_dir"
+        } >> "$LOG_FILE"
+        return 1
+    fi
+    
+    # Extract DB credentials if not set
+    if [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+        if ! extract_db_credentials "$target_dir"; then
+            {
+                echo "❌ Could not extract database credentials from configuration"
+            } >> "$LOG_FILE"
+            return 1
+        fi
+    fi
+    
+    local db_name="${DB_NAMES[$target_dir]}"
+    if [ -z "$db_name" ]; then
+        {
+            echo "❌ Database name not configured for $target_dir"
+        } >> "$LOG_FILE"
+        return 1
+    fi
+    
+    {
+        echo "- Updating database via SQL files in $updatedb_dir"
+        echo "- Database: $db_name, User: $DB_USER"
+    } >> "$LOG_FILE"
+    
+    # Get current database version
+    local current_version=$(mysql -u"$DB_USER" -p"$DB_PASS" -s -N -e \
+        "SELECT version FROM configurations WHERE id=1 LIMIT 1;" "$db_name" 2>/dev/null)
+    
+    {
+        echo "- Current database version: ${current_version:-unknown}"
+    } >> "$LOG_FILE"
+    
+    # Find and run SQL update files in order
+    local update_count=0
+    local error_count=0
+    
+    for sql_file in $(ls "$updatedb_dir"/updateDb.v*.sql 2>/dev/null | sort -V); do
+        local filename=$(basename "$sql_file")
+        {
+            echo "  - Processing: $filename"
+        } >> "$LOG_FILE"
+        
+        if mysql -u"$DB_USER" -p"$DB_PASS" "$db_name" < "$sql_file" >> "$LOG_FILE" 2>&1; then
+            ((update_count++))
+            {
+                echo "    ✔️ Applied successfully"
+            } >> "$LOG_FILE"
+        else
+            ((error_count++))
+            {
+                echo "    ❌ Failed to apply (might be already applied)"
+            } >> "$LOG_FILE"
+        fi
+    done
+    
+    if [ $update_count -gt 0 ]; then
+        {
+            echo "✔️ Database updated: $update_count scripts applied, $error_count skipped/failed"
+        } >> "$LOG_FILE"
+        return 0
+    elif [ $error_count -eq 0 ]; then
+        {
+            echo "✔️ Database already up to date"
+        } >> "$LOG_FILE"
+        return 0
+    else
+        {
+            echo "⚠️ Database update completed with warnings: $error_count scripts failed"
+        } >> "$LOG_FILE"
+        return 1
+    fi
+}
+
+# Main database update function
+update_database() {
+    local target_dir=$1
+    
+    if [ "$ENABLE_DB_UPDATE" != "yes" ]; then
+        return 0
+    fi
+    
+    {
+        echo ""
+        echo "=== DATABASE UPDATE ==="
+    } >> "$LOG_FILE"
+    
+    if [ "$DB_UPDATE_METHOD" = "http" ]; then
+        update_database_http "$target_dir"
+        return $?
+    elif [ "$DB_UPDATE_METHOD" = "sql" ]; then
+        update_database_sql "$target_dir"
+        return $?
+    else
+        {
+            echo "❌ Invalid DB_UPDATE_METHOD: $DB_UPDATE_METHOD"
+        } >> "$LOG_FILE"
+        return 1
+    fi
+}
 
 # Function to draw progress bar
 draw_progress_bar() {
@@ -216,6 +478,27 @@ for TARGET_DIR in "${DIRECTOARE[@]}"; do
         {
             echo "⚠️ .htaccess nu există în $TARGET_DIR"
         } >> "$LOG_FILE"
+    fi
+
+    # Database update (if enabled)
+    if [ "$ENABLE_DB_UPDATE" = "yes" ] && [ $HAS_ERROR -eq 0 ]; then
+        {
+            echo ""
+            echo "=== DATABASE UPDATE ==="
+        } >> "$LOG_FILE"
+        
+        if ! update_database "$TARGET_DIR"; then
+            HAS_WARNING=1
+            if [ -z "$ERROR_MSG" ]; then
+                ERROR_MSG="Database update failed or incomplete"
+            else
+                ERROR_MSG="$ERROR_MSG, DB update failed"
+            fi
+        else
+            {
+                echo "=== DATABASE UPDATE COMPLETE ==="
+            } >> "$LOG_FILE"
+        fi
     fi
 
     # Determine final status
