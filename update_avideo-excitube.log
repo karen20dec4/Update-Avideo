@@ -1,0 +1,904 @@
+- Restaurăm .htaccess...
+- Executăm git pull...
+Already up to date.
+- Comentăm linia 'Options All -Indexes' în .htaccess...
+✔️ Linia comentată cu succes.
+
+=== DATABASE UPDATE ===
+
+=== DATABASE UPDATE ===
+
+=== SQL DATABASE UPDATE ===
+Target directory: /home/excitube/public_html
+updatedb directory: /home/excitube/public_html/updatedb
+✔️ updatedb directory exists
+
+Checking database credentials...
+Current DB_USER: boudoirl_user
+Current DB_PASS: [set - hidden]
+✔️ Using globally configured credentials
+✔️ Extracted database name: excitube
+
+Final credentials check:
+  DB_USER: boudoirl_user
+  DB_PASS: [SET - hidden]
+  DB_NAME: excitube
+
+✔️ All credentials available
+Starting SQL update process...
+- Database: excitube
+- User: boudoirl_user
+- updatedb directory: /home/excitube/public_html/updatedb
+- Current database version: 20.0
+  - Processing: updateDb.v1.0.sql
+--------------
+ALTER TABLE `videos` 
+CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
+CHANGE COLUMN `status` `status` ENUM('a', 'i', 'e', 'x') NOT NULL DEFAULT 'e' COMMENT 'a = active\ni = inactive\ne = encoding\nx = encoding error' ,
+ADD COLUMN `type` ENUM('audio', 'video') NOT NULL DEFAULT 'video' AFTER `duration`
+--------------
+
+ERROR 1265 (01000) at line 12: Data truncated for column 'status' at row 36
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.1.sql
+--------------
+ALTER TABLE `configurations` 
+CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
+ADD COLUMN `webSiteTitle` VARCHAR(45) NOT NULL DEFAULT 'AVideo' AFTER `version`,
+ADD COLUMN `language` VARCHAR(6) NOT NULL DEFAULT 'en' AFTER `webSiteTitle`,
+ADD COLUMN `contactEmail` VARCHAR(45) NOT NULL AFTER `language`,
+CHANGE COLUMN `modified` `modified` DATETIME NOT NULL DEFAULT now() AFTER `contactEmail`,
+CHANGE COLUMN `created` `created` DATETIME NOT NULL DEFAULT now()
+--------------
+
+ERROR 1060 (42S21) at line 6: Duplicate column name 'webSiteTitle'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.2.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v1.3.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v1.4.sql
+--------------
+ALTER SCHEMA `aVideo`  DEFAULT CHARACTER SET utf8  DEFAULT COLLATE utf8_general_ci
+--------------
+
+ERROR 1 (HY000) at line 5: Can't create/write to file './aVideo/db.opt' (Errcode: 2 "No such file or directory")
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.5.sql
+--------------
+ALTER TABLE `categories` 
+CHANGE COLUMN `created` `created` DATETIME NOT NULL DEFAULT now() ,
+CHANGE COLUMN `modified` `modified` DATETIME NOT NULL DEFAULT now() ,
+ADD COLUMN `iconClass` VARCHAR(45) NOT NULL DEFAULT 'fa fa-folder' AFTER `modified`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'iconClass'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.6.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `status` `status` ENUM('a', 'i', 'e', 'x', 'd', 'xmp4', 'xwebm', 'xmp3', 'xogg', 'ximg') NOT NULL DEFAULT 'e' COMMENT 'a = active\ni = inactive\ne = encoding\nx = encoding error\nd = downloading\nxmp4 = encoding mp4 error \nxwebm = encoding webm error \nxmp3 = encoding mp3 error \nxogg = encoding ogg error \nximg = get image error' ,
+ADD COLUMN `videoDownloadedLink` VARCHAR(255) NULL DEFAULT NULL AFTER `type`
+--------------
+
+ERROR 1054 (42S22) at line 12: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.7.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `order` INT(10) UNSIGNED NOT NULL DEFAULT 1 AFTER `videoDownloadedLink`,
+ADD INDEX `index5` (`order` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'order'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v1.8.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v1.9.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.1.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.2.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.3.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.4.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v2.5.sql
+--------------
+ALTER TABLE `configurations` 
+CHANGE COLUMN `ffprobeDuration` `ffprobeDuration` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `ffmpegImage` `ffmpegImage` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `ffmpegMp4` `ffmpegMp4` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `ffmpegWebm` `ffmpegWebm` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `ffmpegMp3` `ffmpegMp3` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `ffmpegOgg` `ffmpegOgg` VARCHAR(400) NULL DEFAULT NULL ,
+CHANGE COLUMN `youtubeDl` `youtubeDl` VARCHAR(400) NULL DEFAULT NULL ,
+ADD COLUMN `head` TEXT NULL DEFAULT NULL AFTER `exiftoolPath`,
+ADD COLUMN `logo` VARCHAR(255) NULL DEFAULT NULL AFTER `head`,
+ADD COLUMN `logo_small` VARCHAR(255) NULL DEFAULT NULL AFTER `logo`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'head'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v2.6.sql
+--------------
+ALTER TABLE `configurations` 
+ADD COLUMN `adsense` TEXT NULL DEFAULT NULL AFTER `logo_small`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'adsense'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v2.7.sql
+--------------
+ALTER TABLE `configurations` 
+ADD COLUMN `mode` ENUM('Youtube', 'Gallery') NULL DEFAULT 'Youtube' AFTER `adsense`
+--------------
+
+ERROR 1060 (42S21) at line 64: Duplicate column name 'mode'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v2.8.sql
+--------------
+ALTER TABLE `configurations` 
+ADD COLUMN `ffmpegSpectrum` VARCHAR(400) NULL DEFAULT NULL AFTER `ffmpegMp3`,
+ADD COLUMN `disable_analytics` TINYINT(1) NULL DEFAULT 0 AFTER `mode`,
+ADD COLUMN `session_timeout` INT(11) NULL DEFAULT 3600 AFTER `disable_analytics`,
+ADD COLUMN `encode_mp4` TINYINT(1) NULL DEFAULT 1 AFTER `session_timeout`,
+ADD COLUMN `encode_webm` TINYINT(1) NULL DEFAULT 1 AFTER `encode_mp4`,
+ADD COLUMN `autoplay` TINYINT(1) NULL DEFAULT 1 AFTER `encode_webm`,
+ADD COLUMN `encode_mp3spectrum` TINYINT(1) NULL DEFAULT 1 AFTER `autoplay`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'disable_analytics'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v2.9.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `rotation` SMALLINT(6) NULL DEFAULT 0 AFTER `order`,
+ADD COLUMN `zoom` FLOAT(11) NULL DEFAULT 1 AFTER `rotation`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'rotation'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v3.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v3.1.sql
+--------------
+ALTER TABLE `configurations` 
+CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
+ADD COLUMN `theme` VARCHAR(45) NULL DEFAULT 'default' AFTER `autoplay`,
+ADD COLUMN `doNotShowVideoAndAudioLinks` TINYINT(1) NULL DEFAULT NULL AFTER `theme`,
+ADD COLUMN `doNotShowCategories` TINYINT(1) NULL DEFAULT NULL AFTER `doNotShowVideoAndAudioLinks`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'theme'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v3.2.sql
+--------------
+ALTER SCHEMA `aVideo`  DEFAULT CHARACTER SET utf8  DEFAULT COLLATE utf8_general_ci
+--------------
+
+ERROR 1 (HY000) at line 12: Can't create/write to file './aVideo/db.opt' (Errcode: 2 "No such file or directory")
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v3.3.sql
+--------------
+ALTER TABLE `configurations` 
+CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
+CHANGE COLUMN `mode` `mode` ENUM('Youtube', 'Gallery') NULL DEFAULT 'Youtube' ,
+ADD COLUMN `smtp` TINYINT(1) NULL DEFAULT NULL AFTER `doNotShowCategories`,
+ADD COLUMN `smtpAuth` TINYINT(1) NULL DEFAULT NULL AFTER `smtp`,
+ADD COLUMN `smtpSecure` VARCHAR(45) NULL DEFAULT NULL COMMENT '\'ssl\'; // secure transfer enabled REQUIRED for Gmail' AFTER `smtpAuth`,
+ADD COLUMN `smtpHost` VARCHAR(100) NULL DEFAULT NULL COMMENT '\"smtp.gmail.com\"' AFTER `smtpSecure`,
+ADD COLUMN `smtpUsername` VARCHAR(45) NULL DEFAULT NULL COMMENT '\"email@gmail.com\"' AFTER `smtpHost`,
+ADD COLUMN `smtpPassword` VARCHAR(45) NULL DEFAULT NULL AFTER `smtpUsername`,
+ADD COLUMN `smtpPort` INT(11) NULL DEFAULT NULL AFTER `smtpPassword`
+--------------
+
+ERROR 1054 (42S22) at line 12: Unknown column 'doNotShowCategories' in 'configurations'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v3.4.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `youtubeId` VARCHAR(45) NULL DEFAULT NULL AFTER `zoom`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'youtubeId'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.0.sql
+--------------
+ALTER TABLE `aVideo`.`configurations` 
+DROP COLUMN `doNotShowCategories`,
+DROP COLUMN `doNotShowVideoAndAudioLinks`,
+DROP COLUMN `encode_mp3spectrum`,
+DROP COLUMN `encode_webm`,
+DROP COLUMN `encode_mp4`,
+DROP COLUMN `exiftoolPath`,
+DROP COLUMN `exiftool`,
+DROP COLUMN `youtubeDlPath`,
+DROP COLUMN `ffmpegPath`,
+DROP COLUMN `youtubeDl`,
+DROP COLUMN `ffmpegOgg`,
+DROP COLUMN `ffmpegSpectrum`,
+DROP COLUMN `ffmpegMp3`,
+DROP COLUMN `ffmpegWebmPortrait`,
+DROP COLUMN `ffmpegWebm`,
+DROP COLUMN `ffmpegMp4Portrait`,
+DROP COLUMN `ffmpegMp4`,
+DROP COLUMN `ffmpegImage`,
+DROP COLUMN `ffprobeDuration`,
+ADD COLUMN `encoderURL` VARCHAR(255) NULL DEFAULT NULL AFTER `smtpPort`
+--------------
+
+ERROR 1146 (42S02) at line 12: Table 'aVideo.configurations' doesn't exist
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.1.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v4.2.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `type` `type` ENUM('audio', 'video', 'embed') NOT NULL DEFAULT 'video' ,
+ADD COLUMN `videoLink` VARCHAR(255) NULL DEFAULT NULL AFTER `youtubeId`
+--------------
+
+ERROR 1054 (42S22) at line 12: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.3.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `canStream` TINYINT(1) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 13: Duplicate column name 'canStream'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.4.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `next_videos_id` INT(11) NULL AFTER `videoLink`,
+ADD INDEX `fk_videos_videos1_idx` (`next_videos_id` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 13: Duplicate column name 'next_videos_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.5.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `canUpload` TINYINT(1) NULL DEFAULT NULL AFTER `canStream`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'canUpload'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.6.sql
+--------------
+ALTER TABLE `comments` 
+ADD COLUMN `comments_id_pai` INT(11) NULL DEFAULT NULL AFTER `modified`,
+ADD COLUMN `pin` INT(1) NOT NULL DEFAULT 0 COMMENT 'If = 1 will be on the top' AFTER `comments_id_pai`,
+ADD INDEX `fk_comments_comments1_idx` (`comments_id_pai` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'comments_id_pai'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.7.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `about` TEXT NULL DEFAULT NULL AFTER `canUpload`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'about'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.8.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `isSuggested` INT(1) NOT NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'isSuggested'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v4.9.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v4.91.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v5.0.sql
+--------------
+ALTER TABLE `configurations`
+ADD COLUMN `allow_download` INT(1) NOT NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'allow_download'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.01.sql
+--------------
+ALTER TABLE `categories` 
+ADD `parentId` INT NOT NULL DEFAULT '0' AFTER `nextVideoOrder`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'parentId'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.2.sql
+--------------
+ALTER TABLE `comments_likes` 
+DROP COLUMN `comments_likescol`
+--------------
+
+ERROR 1091 (42000) at line 5: Can't DROP COLUMN `comments_likescol`; check that it exists
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.3.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `channelName` VARCHAR(45) NOT NULL AFTER `about`,
+ADD COLUMN `emailVerified` TINYINT(1) NOT NULL DEFAULT 0 AFTER `channelName`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'channelName'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.4.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `status` `status` ENUM('a', 'i', 'e', 'x', 'd', 'xmp4', 'xwebm', 'xmp3', 'xogg', 'ximg', 'u', 'p') NOT NULL DEFAULT 'e' COMMENT 'a = active\ni = inactive\ne = encoding\nx = encoding error\nd = downloading\nu = Unlisted\np = private\nxmp4 = encoding mp4 error \nxwebm = encoding webm error \nxmp3 = encoding mp3 error \nxogg = encoding ogg error \nximg = get image error'
+--------------
+
+ERROR 1265 (01000) at line 5: Data truncated for column 'status' at row 36
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.5.sql
+--------------
+ALTER TABLE `videos` CHANGE `type` `type` ENUM('audio','video','embed','linkVideo','linkAudio') CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT 'video'
+--------------
+
+ERROR 1054 (42S22) at line 1: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.6.sql
+--------------
+ALTER TABLE `users` ADD COLUMN `analyticsCode` VARCHAR(45) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'analyticsCode'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.7.sql
+--------------
+ALTER TABLE `configurations` ADD `authCanViewChart` TINYINT(2) NOT NULL DEFAULT '0' AFTER `authCanUploadVideos`
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'authCanViewChart'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.8.sql
+--------------
+alter table users add externalOptions TEXT NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'externalOptions'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v5.9.sql
+--------------
+alter table plugins add pluginversion varchar(6)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'pluginversion'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.0.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `first_name` VARCHAR(255) NULL DEFAULT NULL AFTER `analyticsCode`,
+ADD COLUMN `last_name` VARCHAR(255) NULL DEFAULT NULL AFTER `first_name`,
+ADD COLUMN `address` VARCHAR(255) NULL DEFAULT NULL AFTER `last_name`,
+ADD COLUMN `zip_code` VARCHAR(45) NULL DEFAULT NULL AFTER `address`,
+ADD COLUMN `country` VARCHAR(100) NULL DEFAULT NULL AFTER `zip_code`,
+ADD COLUMN `region` VARCHAR(100) NULL DEFAULT NULL AFTER `country`,
+ADD COLUMN `city` VARCHAR(100) NULL DEFAULT NULL AFTER `region`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'first_name'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.1.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `trailer1` VARCHAR(255) NULL DEFAULT NULL,
+ADD COLUMN `trailer2` VARCHAR(255) NULL DEFAULT NULL,
+ADD COLUMN `trailer3` VARCHAR(255) NULL DEFAULT NULL,
+ADD COLUMN `rate` FLOAT(4,2) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'trailer1'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.2.sql
+--------------
+ALTER TABLE `categories` 
+ADD COLUMN `users_id` INT(11) NOT NULL DEFAULT 1 AFTER `iconClass`,
+ADD COLUMN `private` TINYINT(1) NULL DEFAULT 0 AFTER `users_id`,
+ADD INDEX `fk_categories_users1_idx` (`users_id` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'users_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.3.sql
+--------------
+ALTER TABLE `videos_statistics` 
+ADD COLUMN `created` DATETIME NULL DEFAULT NULL AFTER `videos_id`,
+ADD COLUMN `modified` DATETIME NULL DEFAULT NULL AFTER `created`,
+ADD COLUMN `lastVideoTime` INT(11) NULL DEFAULT NULL AFTER `modified`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'created'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.4.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `can_download` TINYINT(1) NULL DEFAULT NULL AFTER `rate`,
+ADD COLUMN `can_share` TINYINT(1) NULL DEFAULT NULL AFTER `can_download`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'can_download'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.5.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `rrating` VARCHAR(45) NULL DEFAULT NULL AFTER `can_share`
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'rrating'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.6.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v6.7.sql
+--------------
+ALTER TABLE `subscribes` 
+ADD COLUMN `subscriber_users_id` INT(11) NOT NULL AFTER `notify`,
+ADD INDEX `fk_subscribes_users2_idx` (`subscriber_users_id` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'subscriber_users_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v6.8.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v6.9.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `externalOptions` TEXT NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'externalOptions'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.0.sql
+--------------
+ALTER TABLE `plugins` 
+ADD INDEX `plugin_status` (`status` ASC)
+--------------
+
+ERROR 1061 (42000) at line 5: Duplicate key name 'plugin_status'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.1.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `only_for_paid` TINYINT(1) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'only_for_paid'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.2.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `views_count_25` INT(11) NULL DEFAULT 0,
+ADD COLUMN `views_count_50` INT(11) NULL DEFAULT 0,
+ADD COLUMN `views_count_75` INT(11) NULL DEFAULT 0,
+ADD COLUMN `views_count_100` INT(11) NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'views_count_25'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.3.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `sites_id` INT(11) NULL,
+ADD INDEX `fk_videos_sites1_idx` (`sites_id` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 16: Duplicate column name 'sites_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.4.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `status` `status` ENUM('a', 'i', 'e', 'x', 'd', 'xmp4', 'xwebm', 'xmp3', 'xogg', 'ximg', 'u', 'p', 't') NOT NULL DEFAULT 'e' COMMENT 'a = active\ni = inactive\ne = encoding\nx = encoding error\nd = downloading\nu = Unlisted\np = private\nxmp4 = encoding mp4 error \nxwebm = encoding webm error \nxmp3 = encoding mp3 error \nxogg = encoding ogg error \nximg = get image error\nt = Transfering' ,
+CHANGE COLUMN `type` `type` ENUM('audio', 'video', 'embed', 'linkVideo', 'linkAudio', 'torrent', 'pdf', 'image', 'gallery') NOT NULL DEFAULT 'video'
+--------------
+
+ERROR 1054 (42S22) at line 5: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.5.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `type` `type` ENUM('audio', 'video', 'embed', 'linkVideo', 'linkAudio', 'torrent', 'pdf', 'image', 'gallery', 'article') NOT NULL DEFAULT 'video'
+--------------
+
+ERROR 1054 (42S22) at line 5: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.6.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `donationLink` VARCHAR(225) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'donationLink'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.7.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `type` `type` ENUM('audio', 'video', 'embed', 'linkVideo', 'linkAudio', 'torrent', 'pdf', 'image', 'gallery', 'article', 'serie') NOT NULL DEFAULT 'video' ,
+ADD COLUMN `serie_playlists_id` INT(11) NULL DEFAULT NULL,
+ADD INDEX `fk_videos_playlists1_idx` (`serie_playlists_id` ASC)
+--------------
+
+ERROR 1054 (42S22) at line 6: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v7.8.sql
+--------------
+ALTER TABLE `categories` 
+ADD COLUMN `allow_download` TINYINT(1) NULL DEFAULT 1
+--------------
+
+ERROR 1060 (42S21) at line 6: Duplicate column name 'allow_download'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v8.1.sql
+--------------
+ALTER TABLE `videos` 
+ADD INDEX `clean_title_INDEX` (`clean_title` ASC),
+ADD INDEX `video_filename_INDEX` (`filename` ASC)
+--------------
+
+ERROR 1061 (42000) at line 5: Duplicate key name 'clean_title_INDEX'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.2.sql
+--------------
+ALTER TABLE `categories` 
+ADD INDEX `clean_name_INDEX2` (`clean_name` ASC)
+--------------
+
+ERROR 1061 (42000) at line 5: Duplicate key name 'clean_name_INDEX2'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.3.sql
+--------------
+ALTER TABLE `videos`
+ADD COLUMN `video_password` VARCHAR(45) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'video_password'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.4.sql
+--------------
+ALTER TABLE `categories` 
+ADD COLUMN `order` INT(11) NULL DEFAULT NULL,
+ADD INDEX `sortcategoryOrderIndex` (`order` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'order'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.5.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `encoderURL` VARCHAR(255) NULL DEFAULT NULL,
+ADD COLUMN `filepath` VARCHAR(255) NULL DEFAULT NULL,
+ADD COLUMN `filesize` BIGINT(19) UNSIGNED NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 8: Duplicate column name 'encoderURL'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.6.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v8.7.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v8.8.sql
+--------------
+ALTER TABLE `videos` 
+CHANGE COLUMN `type` `type` ENUM('audio', 'video', 'embed', 'linkVideo', 'linkAudio', 'torrent', 'pdf', 'image', 'gallery', 'article', 'serie', 'zip') NOT NULL DEFAULT 'video'
+--------------
+
+ERROR 1054 (42S22) at line 8: Unknown column 'type' in 'videos'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v8.9.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.0.sql
+--------------
+ALTER TABLE `videos` 
+ADD INDEX `video_status_idx` (`status` ASC),
+ADD INDEX `video_type_idx` (`type` ASC)
+--------------
+
+ERROR 1072 (42000) at line 12: Key column 'type' doesn't exist in table
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v9.1.sql
+--------------
+ALTER TABLE `categories` 
+ADD INDEX `category_name_idx` (`name` ASC)
+--------------
+
+ERROR 1061 (42000) at line 8: Duplicate key name 'category_name_idx'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v9.2.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.3.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.4.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `canCreateMeet` TINYINT(1) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 3: Duplicate column name 'canCreateMeet'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v9.5.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.6.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.7.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v9.8.sql
+--------------
+ALTER TABLE `videos` 
+MODIFY COLUMN status 
+ENUM('a', 'k', 'i', 'e', 'x', 'd', 'xmp4', 'xwebm', 'xmp3', 'xogg', 'ximg', 'u', 'p', 't') NOT NULL DEFAULT 'e' COMMENT 'a = active\nk = active and encofing\ni = inactive\ne = encoding\nx = encoding error\nd = downloading\nu = Unlisted\np = private\nxmp4 = encoding mp4 error \nxwebm = encoding webm error \nxmp3 = encoding mp3 error \nxogg = encoding ogg error \nximg = get image error\nt = Transfering'
+--------------
+
+ERROR 1265 (01000) at line 5: Data truncated for column 'status' at row 36
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v10.0.sql
+--------------
+ALTER TABLE `playlists` 
+ADD COLUMN `showOnTV` TINYINT NULL DEFAULT NULL,
+ADD INDEX `showOnTVindex3` (`showOnTV` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 6: Duplicate column name 'showOnTV'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v10.1.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `extra_info` TEXT NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 29: Duplicate column name 'extra_info'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v10.2.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v10.3.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `live_transmitions_history_id` INT(11) NULL DEFAULT NULL,
+ADD INDEX `fk_videos_live_transmitions_history1_idx` (`live_transmitions_history_id` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 2: Duplicate column name 'live_transmitions_history_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v10.4.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v10.5.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v10.7.sql
+--------------
+ALTER TABLE `users_extra_info` 
+ADD COLUMN `order` INT NOT NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 4: Duplicate column name 'order'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v10.8.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v11.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v11.1.sql
+--------------
+ALTER TABLE `categories` 
+ADD COLUMN `suggested` TINYINT(1) NULL DEFAULT NULL,
+ADD INDEX `categoriesindex9suggested` (`suggested` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'suggested'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.2.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `total_seconds_watching` INT(11) NULL DEFAULT 0 AFTER `live_transmitions_history_id`,
+ADD INDEX `total_sec_watchinindex` (`total_seconds_watching` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'total_seconds_watching'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.3.sql
+--------------
+ALTER TABLE `videos_statistics` 
+ADD COLUMN `json` TEXT NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'json'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.4.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `duration_in_seconds` INT NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'duration_in_seconds'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.5.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `likes` INT(11) NULL DEFAULT NULL,
+ADD COLUMN `dislikes` INT(11) NULL DEFAULT NULL,
+ADD INDEX `videos_likes_index` (`likes` ASC),
+ADD INDEX `videos_dislikes_index` (`dislikes` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'likes'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.6.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `phone` VARCHAR(255) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'phone'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.7.sql
+--------------
+ALTER TABLE `users` 
+ADD COLUMN `is_company` TINYINT(4) NULL DEFAULT NULL AFTER `phone`
+--------------
+
+ERROR 1060 (42S21) at line 12: Duplicate column name 'is_company'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v11.8.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.1.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `epg_link` VARCHAR(400) NULL DEFAULT NULL,
+ADD INDEX `index_epg_link` (`epg_link` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'epg_link'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v12.2.sql
+--------------
+ALTER TABLE `videos` 
+ADD COLUMN `publish_datetime` DATETIME NULL DEFAULT NULL,
+ADD COLUMN `notification_datetime` DATETIME NULL DEFAULT NULL,
+ADD INDEX `index25_publish` (`publish_datetime` ASC),
+ADD INDEX `index26_publish` (`notification_datetime` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 5: Duplicate column name 'publish_datetime'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v12.3.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.4.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.5.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.6.sql
+--------------
+ALTER TABLE `videos_statistics`
+ADD COLUMN `timezone` VARCHAR(255) NULL,
+ADD COLUMN `created_php_time` INT(11) NULL,
+ADD INDEX `videos_statistics_php_time` (`created_php_time` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'timezone'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v12.7.sql
+--------------
+ALTER TABLE `videos_statistics`
+ADD COLUMN `rewarded` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+ADD INDEX `videos_statistics_rewarded` (`rewarded` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'rewarded'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v12.8.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v12.9.sql
+--------------
+ALTER TABLE `playlists`
+ADD COLUMN `showOnFirstPage` TINYINT(1) UNSIGNED NULL DEFAULT 0,
+ADD INDEX `showonFirstpage` (`showOnFirstPage` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'showOnFirstPage'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.0.sql
+--------------
+ALTER TABLE `configurations` ADD COLUMN `description` TEXT NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'description'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.1.sql
+--------------
+ALTER TABLE `videos` ADD COLUMN `made_for_kids` TINYINT(1) NOT NULL DEFAULT 0,
+ADD INDEX `index_made_for_kids` (`made_for_kids` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'made_for_kids'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.2.sql
+--------------
+ALTER TABLE `users` ADD COLUMN `birth_date` DATE NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'birth_date'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.3.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v14.4.sql
+--------------
+ALTER TABLE `videos`
+ADD COLUMN `isChannelSuggested` INT(1) UNSIGNED NOT NULL DEFAULT 0
+--------------
+
+ERROR 1060 (42S21) at line 2: Duplicate column name 'isChannelSuggested'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.5.sql
+--------------
+ALTER TABLE `comments`
+ADD COLUMN `live_transmitions_history_id` INT(11) NULL DEFAULT NULL,
+ADD INDEX `fk_comments_live_transmitions_history1_idx` (`live_transmitions_history_id`),
+ADD CONSTRAINT `fk_comments_live_transmitions_history1`
+    FOREIGN KEY (`live_transmitions_history_id`)
+    REFERENCES `live_transmitions_history` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'live_transmitions_history_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v14.6.sql
+--------------
+ALTER TABLE `comments`
+ADD COLUMN `chat_messages_id` INT(11) NULL DEFAULT NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'chat_messages_id'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v15.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v15.1.sql
+--------------
+ALTER TABLE `videos` ADD COLUMN `created_php_time` BIGINT UNSIGNED NULL
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'created_php_time'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v16.0.sql
+--------------
+ALTER TABLE `videos_statistics`
+ADD COLUMN `user_agent` VARCHAR(255) NULL,
+ADD COLUMN `app` VARCHAR(45) NULL,
+ADD INDEX `video_statistics_ua` (`user_agent` ASC),
+ADD INDEX `video_statistics_app` (`app` ASC)
+--------------
+
+ERROR 1060 (42S21) at line 1: Duplicate column name 'user_agent'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v17.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v18.0.sql
+    ✔️ Applied successfully
+  - Processing: updateDb.v18.1.sql
+--------------
+ALTER TABLE `users_groups`
+ADD COLUMN `allowed_resolutions` TEXT NULL DEFAULT NULL
+COMMENT 'JSON array of allowed video resolutions for this user group'
+AFTER `group_name`
+--------------
+
+ERROR 1060 (42S21) at line 2: Duplicate column name 'allowed_resolutions'
+    ❌ Failed to apply (might be already applied)
+  - Processing: updateDb.v20.0.sql
+    ✔️ Applied successfully
+✔️ Database updated: 40 scripts applied, 85 skipped/failed
+=== DATABASE UPDATE COMPLETE ===
+✔️ Update complet pentru: /home/excitube/public_html
+--------------------------------------------------
+Procesăm (5/5): /home/excitube/domains/8teentube.us/public_html
+--------------------------------------------------
