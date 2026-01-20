@@ -46,9 +46,9 @@ DB_NAMES["/home/teentwerk/domains/sexotube.us/public_html"]="avideo_db2"
 # Opțiune 2: Lasă gol și scriptul va citi din videos/configuration.php
 # Scriptul va extrage: $mysqlUser, $mysqlPass, $mysqlDatabase
 # Exemplu în configuration.php:
-#   $mysqlUser = 'boudoirl_user';
-#   $mysqlPass = 'rolling*';
-#   $mysqlDatabase = 'teentwerk';
+#   $mysqlUser = 'your_mysql_user';
+#   $mysqlPass = 'your_secure_password_here';
+#   $mysqlDatabase = 'your_database_name';
 ```
 
 ## Exemplu Complet de Configurare

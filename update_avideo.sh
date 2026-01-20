@@ -164,6 +164,7 @@ extract_db_credentials() {
     {
         echo "- Reading configuration from: $config_file"
         echo "  Found user: ${extracted_user:-[not found]}"
+        echo "  Found password: ${extracted_pass:+[found]}"
         echo "  Found database: ${extracted_db:-[not found]}"
     } >> "$LOG_FILE"
     

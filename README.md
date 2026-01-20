@@ -84,9 +84,9 @@ DB_NAMES["/home/teentwerk/domains/sexotube.us/public_html"]="avideo_db2"
 ```php
 $mysqlHost = 'localhost';
 $mysqlPort = '3306';
-$mysqlUser = 'boudoirl_user';
-$mysqlPass = 'rolling*';
-$mysqlDatabase = 'teentwerk';
+$mysqlUser = 'your_mysql_user';
+$mysqlPass = 'your_secure_password_here';
+$mysqlDatabase = 'your_database_name';
 ```
 
 **Avantaje:**
