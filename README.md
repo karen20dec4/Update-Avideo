@@ -67,13 +67,26 @@ Această metodă rulează direct fișierele `.sql` din directorul `updatedb`.
 ENABLE_DB_UPDATE="yes"
 DB_UPDATE_METHOD="sql"
 
-# Credențiale bază de date
+# Opțiunea 1: Lasă gol și credențialele vor fi extrase automat din videos/configuration.php
+# Scriptul va căuta variabilele: $mysqlUser, $mysqlPass, $mysqlDatabase
+DB_USER=""
+DB_PASS=""
+declare -A DB_NAMES
+
+# Opțiunea 2: Setează manual credențiale și baze de date
 DB_USER="root"
 DB_PASS="parola_mysql"
-
-# Nume baze de date pentru fiecare director
 DB_NAMES["/home/teentwerk/public_html"]="avideo_db1"
 DB_NAMES["/home/teentwerk/domains/sexotube.us/public_html"]="avideo_db2"
+```
+
+**Exemplu configurație în videos/configuration.php:**
+```php
+$mysqlHost = 'localhost';
+$mysqlPort = '3306';
+$mysqlUser = 'boudoirl_user';
+$mysqlPass = 'rolling*';
+$mysqlDatabase = 'teentwerk';
 ```
 
 **Avantaje:**

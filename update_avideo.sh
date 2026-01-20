@@ -31,10 +31,15 @@
 # METHOD 2 - Direct SQL:
 #   - Runs SQL files from updatedb directory directly
 #   - Automatically reads DB credentials from videos/configuration.php
+#     (looks for $mysqlUser, $mysqlPass, $mysqlDatabase variables)
 #   - Or set DB_USER, DB_PASS, and DB_NAMES manually
 #   - Example:
 #       ENABLE_DB_UPDATE="yes"
 #       DB_UPDATE_METHOD="sql"
+#       # Leave empty to auto-extract from configuration.php
+#       DB_USER=""
+#       DB_PASS=""
+#       # Or set manually:
 #       DB_USER="root"
 #       DB_PASS="password"
 #       DB_NAMES["/home/teentwerk/public_html"]="avideo_db"
@@ -132,9 +137,10 @@ extract_php_config_value() {
     local config_file=$1
     local var_name=$2
     
-    # Try both global array and direct variable patterns
-    grep -oP "(?<=\\\$global\['${var_name}'\]\s=\s')[^']*" "$config_file" 2>/dev/null || \
-    grep -oP "(?<=\\\$$var_name\s=\s\")[^\"]*" "$config_file" 2>/dev/null
+    # Extract value from PHP variable (supports both single and double quotes)
+    # Format: $variableName = 'value'; or $variableName = "value";
+    grep -oP "\\\$$var_name\s*=\s*'\K[^']*" "$config_file" 2>/dev/null || \
+    grep -oP "\\\$$var_name\s*=\s*\"\K[^\"]*" "$config_file" 2>/dev/null
 }
 
 # Function to extract database credentials from AVideo configuration.php
@@ -143,18 +149,41 @@ extract_db_credentials() {
     local config_file="$target_dir/videos/configuration.php"
     
     if [ ! -f "$config_file" ]; then
+        {
+            echo "⚠️ Configuration file not found: $config_file"
+        } >> "$LOG_FILE"
         return 1
     fi
     
     # Extract database credentials from PHP configuration file
-    DB_USER=$(extract_php_config_value "$config_file" "databaseUser")
-    DB_PASS=$(extract_php_config_value "$config_file" "databasePass")
-    local db_name=$(extract_php_config_value "$config_file" "databaseName")
+    # Variable names: $mysqlUser, $mysqlPass, $mysqlDatabase
+    local extracted_user=$(extract_php_config_value "$config_file" "mysqlUser")
+    local extracted_pass=$(extract_php_config_value "$config_file" "mysqlPass")
+    local extracted_db=$(extract_php_config_value "$config_file" "mysqlDatabase")
     
-    if [ -n "$db_name" ]; then
-        DB_NAMES["$target_dir"]="$db_name"
+    {
+        echo "- Reading configuration from: $config_file"
+        echo "  Found user: ${extracted_user:-[not found]}"
+        echo "  Found database: ${extracted_db:-[not found]}"
+    } >> "$LOG_FILE"
+    
+    # Use extracted values if not already set globally
+    if [ -z "$DB_USER" ] && [ -n "$extracted_user" ]; then
+        DB_USER="$extracted_user"
+    fi
+    if [ -z "$DB_PASS" ] && [ -n "$extracted_pass" ]; then
+        DB_PASS="$extracted_pass"
+    fi
+    
+    # Set database name for this directory
+    if [ -n "$extracted_db" ]; then
+        DB_NAMES["$target_dir"]="$extracted_db"
         return 0
     fi
+    
+    {
+        echo "⚠️ Could not extract database name from configuration"
+    } >> "$LOG_FILE"
     return 1
 }
 
