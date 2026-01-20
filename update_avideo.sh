@@ -384,11 +384,28 @@ update_database_sql() {
     
     {
         echo "- Current database version: ${current_version:-unknown}"
+        echo ""
     } >> "$LOG_FILE"
+    
+    # Function to compare versions
+    # Returns 0 if $1 > $2, 1 otherwise
+    version_gt() {
+        local ver1=$1
+        local ver2=$2
+        
+        # If current version is unknown, skip all updates for safety
+        if [ -z "$ver2" ] || [ "$ver2" = "unknown" ]; then
+            return 1
+        fi
+        
+        # Compare versions using sort -V
+        test "$(printf '%s\n' "$ver1" "$ver2" | sort -V | head -n1)" != "$ver1"
+    }
     
     # Find and run SQL update files in order
     local update_count=0
     local error_count=0
+    local skipped_count=0
     
     shopt -s nullglob
     local sql_files=("$updatedb_dir"/updateDb.v*.sql)
@@ -398,10 +415,43 @@ update_database_sql() {
     IFS=$'\n' sql_files=($(sort -V <<<"${sql_files[*]}"))
     unset IFS
     
+    {
+        echo "Checking which updates need to be applied..."
+        echo "Total SQL files found: ${#sql_files[@]}"
+        echo ""
+    } >> "$LOG_FILE"
+    
     for sql_file in "${sql_files[@]}"; do
         local filename=$(basename "$sql_file")
+        
+        # Extract version from filename (e.g., updateDb.v2.5.sql -> 2.5)
+        local file_version=$(echo "$filename" | grep -oP 'v\K[0-9.]+' | head -1)
+        
         {
-            echo "  - Processing: $filename"
+            echo "  - Checking: $filename (version $file_version)"
+        } >> "$LOG_FILE"
+        
+        # Skip if current version is unknown (safety measure)
+        if [ -z "$current_version" ] || [ "$current_version" = "unknown" ]; then
+            {
+                echo "    ⚠️ SKIPPED: Current database version is unknown - skipping all updates for safety"
+                echo "    ℹ️ Please verify database version manually before running updates"
+            } >> "$LOG_FILE"
+            ((skipped_count++))
+            continue
+        fi
+        
+        # Skip if this update is older or equal to current version
+        if ! version_gt "$file_version" "$current_version"; then
+            {
+                echo "    ⏭️  SKIPPED: Version $file_version <= current version $current_version (already applied)"
+            } >> "$LOG_FILE"
+            ((skipped_count++))
+            continue
+        fi
+        
+        {
+            echo "    ▶️  APPLYING: Version $file_version > current version $current_version"
         } >> "$LOG_FILE"
         
         if MYSQL_PWD="$DB_PASS" mysql -u"$DB_USER" "$db_name" < "$sql_file" >> "$LOG_FILE" 2>&1; then
@@ -412,26 +462,38 @@ update_database_sql() {
         else
             ((error_count++))
             {
-                echo "    ❌ Failed to apply (might be already applied)"
+                echo "    ❌ Failed to apply - check error above"
             } >> "$LOG_FILE"
         fi
     done
     
+    {
+        echo ""
+        echo "Update summary:"
+        echo "  - Total files checked: ${#sql_files[@]}"
+        echo "  - Skipped (already applied): $skipped_count"
+        echo "  - Applied successfully: $update_count"
+        echo "  - Failed: $error_count"
+    } >> "$LOG_FILE"
+    
     if [ $update_count -gt 0 ]; then
         {
-            echo "✔️ Database updated: $update_count scripts applied, $error_count skipped/failed"
+            echo ""
+            echo "✔️ Database updated: $update_count new updates applied"
         } >> "$LOG_FILE"
         return 0
-    elif [ $error_count -eq 0 ]; then
+    elif [ $error_count -gt 0 ]; then
         {
-            echo "✔️ Database already up to date"
-        } >> "$LOG_FILE"
-        return 0
-    else
-        {
-            echo "⚠️ Database update completed with warnings: $error_count scripts failed"
+            echo ""
+            echo "⚠️ Database update completed with errors: $error_count updates failed"
         } >> "$LOG_FILE"
         return 1
+    else
+        {
+            echo ""
+            echo "✔️ Database already up to date (no new updates to apply)"
+        } >> "$LOG_FILE"
+        return 0
     fi
 }
 
